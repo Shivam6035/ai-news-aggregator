@@ -1,0 +1,22 @@
+uv init
+
+
+## ----  create files and folder ---- #
+
+'mkdir app/scrapers, app/services, agent, docker'  or 
+'New-Item -ItemType Directory -Path "app/scrapers", "app/services", "agent", "docker"'
+
+## --  create env -- ##
+
+uv venv
+uv add sqlalchemy psycopg2-binary requests feedparser beautifulsoup4 python-dotenv openai 
+uv add ipykernel --dev
+uv add youtube_transcript_api
+uv add pydantic
+uv add docling
+
+## --- blog post ---###
+
+https://openai.com/news/ 
+https://www.anthropic.com/engineering 
+https://www.anthropic.com/research
