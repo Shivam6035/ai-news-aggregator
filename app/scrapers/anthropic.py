@@ -23,22 +23,31 @@ class AnthropicScraper:
         ]
         self.converter = DocumentConverter()
 
+    def _get_category(self, entry) -> Optional[str]:
+        tags = entry.get("tags") or []
+        if not tags:
+            return None
+        first_tag = tags[0]
+        if isinstance(first_tag, dict):
+            return first_tag.get("term")
+        return str(first_tag)
+
     def get_articles(self, hours: int = 24) -> List[AnthropicArticle]:
         now = datetime.now(timezone.utc)
         cutoff_time = now - timedelta(hours=hours)
         articles = []
         seen_guids = set()
-        
+
         for rss_url in self.rss_urls:
             feed = feedparser.parse(rss_url)
             if not feed.entries:
                 continue
-            
+
             for entry in feed.entries:
                 published_parsed = getattr(entry, "published_parsed", None)
                 if not published_parsed:
                     continue
-                
+
                 published_time = datetime(*published_parsed[:6], tzinfo=timezone.utc)
                 if published_time >= cutoff_time:
                     guid = entry.get("id", entry.get("link", ""))
@@ -50,9 +59,9 @@ class AnthropicScraper:
                             url=entry.get("link", ""),
                             guid=guid,
                             published_at=published_time,
-                            category=entry.get("tags", [{}])[0].get("term") if entry.get("tags") else None
+                            category=self._get_category(entry)
                         ))
-        
+
         return articles
 
     def url_to_markdown(self, url: str) -> Optional[str]:
@@ -62,14 +71,16 @@ class AnthropicScraper:
         except Exception:
             return None
 
+
 if __name__ == "__main__":
     scraper = AnthropicScraper()
     articles: List[AnthropicArticle] = scraper.get_articles(hours=100)
-    markdown: str = scraper.url_to_markdown(articles[1].url)
-    print(markdown)
-elif len(articles) == 1:
-    print("Only one article found. Testing with the first one:")
-    markdown: str = scraper.url_to_markdown(articles[0].url)
-    print(markdown)
-else:
-    print("No articles were scraped, so there is nothing to convert to markdown.")
+    print(f"Found {len(articles)} anthropic articles")
+    if articles:
+        markdown = scraper.url_to_markdown(articles[0].url)
+        if markdown:
+            print(markdown[:1000])
+        else:
+            print("No markdown could be generated for the first article")
+    else:
+        print("No articles were scraped, so there is nothing to convert to markdown.")
